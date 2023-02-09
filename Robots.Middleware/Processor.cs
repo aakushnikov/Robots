@@ -1,45 +1,61 @@
 ﻿using Logging.Net;
+using Robots.Middleware.Interfaces;
 using Robots.Model.Terrain;
 using Robots.Model.Robot;
 using Robots.Model.Interfaces;
 
 namespace Robots.Middleware;
 
-public partial class Processor
+public partial class Processor : IDisposable
 {
-    public bool OkAccepted { get; private set; }
-    
+    private bool _okAccepted;
     private IGrid? _grid;
-    private States _state;
+    private States _currentState;
     private readonly IList<IRobot> _robots;
+    private readonly IIOProvider _ioProvider;
 
-    public Processor()
+    public Processor(IIOProvider ioProvider)
     {
         _robots = new List<IRobot>();
+        _ioProvider = ioProvider;
     }
 
-    public bool ParseInstruction(string? input, out string error)
+    private void Run()
+    {
+        if (!_okAccepted)
+            throw new ApplicationException($"Grid and Robots locations and directions should be defined first. Use {nameof(ProcessInput)} method");
+        _ioProvider.WriteLine();
+        _ioProvider.WriteLine("Executing robots processing...");
+        foreach (var robot in _robots)
+        {
+            robot.Process();
+        }        
+    }
+
+    #region Parsers
+
+    private bool ParseInstruction(string? input, out string error)
     {
         error = string.Empty;
 
         try
         {
-            if (OkAccepted)
+            if (_okAccepted)
                 throw new NotSupportedException("All commands were accepted. No more instructions are allowed");
             
             if (string.IsNullOrEmpty(input))
                 throw new FormatException("Instruction cannot be empty");
             
-            switch (_state)
+            switch (_currentState)
             {
                 case States.WaitingForGridData:
                     ParseGridData(input, out _grid);
-                    _state = States.WaitingForRobotData1;
+                    _currentState = States.WaitingForRobotData1;
                     break;
                 case States.WaitingForRobotData1:
                     if (CheckForOk(input))
                     {
-                        _state = States.Ready;
+                        _currentState = States.Ready;
                         return ParseInstruction(input, out error);
                     }
 
@@ -47,14 +63,24 @@ public partial class Processor
                         throw new ApplicationException("Grid is null when it shouldn't be");
 
                     ParseLocationAndDirectionData(input, _grid, out var location, out var direction);
-                    _state = States.WaitingForRobotData2;
+                    _currentState = States.WaitingForRobotData2;
+                    _robots.Add(new Robot(location, direction));
                     break;
                 case States.WaitingForRobotData2:
                     ParseCommandData(input, out var commands);
-                    _state = States.WaitingForRobotData1;
+                    _currentState = States.WaitingForRobotData1;
+                    _robots.Last().SetCommands(commands);
                     break;
                 case States.Ready:
-                    OkAccepted = true;
+                    _okAccepted = true;
+                    Run();
+                    foreach (var robot in _robots)
+                    {
+                        var robotData = string.Join(" ",
+                            robot.CurrentPosition.X, robot.CurrentPosition.Y,
+                            (char)robot.CurrentDirection, robot.IsLost ? "LOST" : string.Empty);
+                        _ioProvider.WriteLine($"Robot {robot.Id} last position: {robotData}");
+                    }
                     break;
                 default:
                     throw new NotImplementedException("Unknown state. Features was not implemented");
@@ -135,4 +161,44 @@ public partial class Processor
                     .First(c => c.StartsWith(ch.ToString(), StringComparison.OrdinalIgnoreCase))))
             .ToArray();
     }
+    
+    private void ProcessInput(string message)
+    {
+        bool ok;
+        do
+        {
+            _ioProvider.WriteLine(message);
+            _ioProvider.Write("> ");
+            ok = ParseInstruction(_ioProvider.ReadLine(), out var error);
+            if (ok) continue;
+            _ioProvider.WriteLine($"Incorrect format. {error}");
+        } while (!ok);
+    }
+
+    public void ProcessInput()
+    {
+        ProcessInput("Please, input grid size (X and Y) and press Enter. For example '5 3'.");
+        Console.WriteLine("Grid created. Thank you. ");
+
+        while (!_okAccepted)
+        {
+            ProcessInput(
+                "Please, input robot's position (integer X and Y) and direction (one of chars: N/S/W/E) in bounds of previously entered grid size. For example. '1 1 E'");
+            if (_okAccepted) break;
+            ProcessInput(
+                "Please, input robot's commands (sequence of chars: L/R/F) where L is Turn Left, R is Turn Right, F is Move Forward. For example. 'RFFLRF'");
+            Console.WriteLine($"Robot (ID: {_robots.Last().Id}) was created.");
+        } 
+    }
+
+    #endregion
+
+    #region IDisposable
+
+    public void Dispose()
+    {
+        _robots.Clear();
+    }
+    
+    #endregion
 }
