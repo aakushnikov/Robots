@@ -2,7 +2,7 @@
 
 public enum Command
 {
-    Left ='L',
-    Right = 'R',
-    Forward = 'F',
+    Left = -1,
+    Right = -2,
+    Forward = 1,
 }

@@ -64,7 +64,7 @@ public partial class Processor : IDisposable
 
                     ParseLocationAndDirectionData(input, _grid, out var location, out var direction);
                     _currentState = States.WaitingForRobotData2;
-                    _robots.Add(new Robot(location, direction));
+                    _robots.Add(new Robot(_grid, location, direction));
                     break;
                 case States.WaitingForRobotData2:
                     ParseCommandData(input, out var commands);
@@ -78,12 +78,12 @@ public partial class Processor : IDisposable
                     {
                         var robotData = string.Join(" ",
                             robot.CurrentPosition.X, robot.CurrentPosition.Y,
-                            (char)robot.CurrentDirection, robot.IsLost ? "LOST" : string.Empty);
+                            robot.CurrentDirection.ToString()[0], robot.IsLost ? "LOST" : string.Empty);
                         _ioProvider.WriteLine($"Robot {robot.Id} last position: {robotData}");
                     }
                     break;
                 default:
-                    throw new NotImplementedException("Unknown state. Features was not implemented");
+                    throw new NotImplementedException($"Features for state {_currentState} was not implemented");
             }
         }
         catch (ApplicationException ex)
@@ -147,7 +147,7 @@ public partial class Processor : IDisposable
             throw new FormatException(
                 $"Y={y} cannot be larger then specified grid size {grid.Bounds.Y}. Index assumed to start from 0");
         
-        location = new Location();
+        location = new Location(x, y);
         direction = Enum.Parse<Direction>(
             Enum.GetNames<Direction>()
                 .First(d => d.StartsWith(data[2], StringComparison.OrdinalIgnoreCase)));
