@@ -5,7 +5,6 @@ namespace Robots.Model.Interfaces;
 
 public interface IGrid
 {
-    ICell[][] Cells { get; }
     Location Bounds { get; }
-    Location? CanMove(Location currentLocation, Command command, Direction direction);
+    Location? CanChangeLocation(Location currentLocation, Command command, Direction direction);
 }

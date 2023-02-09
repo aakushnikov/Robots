@@ -5,41 +5,56 @@ namespace Robots.Model.Terrain;
 
 public sealed class Grid : IGrid
 {
-    public ICell[][] Cells { get; }
     public Location Bounds { get; }
 
     public Grid(uint xSize, uint ySize)
     {
-        Cells = new ICell[xSize][];
-        for (uint x = 0; x < xSize; x++)
-        {
-            Cells[x] = new ICell[ySize];
-            for (uint y = 0; y < ySize; y++)
-            {
-                var location = new Location(x, y);
-                var cell = new Cell(this, location);
-                Cells[x][y] = cell;
-            }
-        }
-
         Bounds = new Location(xSize, ySize);
     }
 
-    public Location? CanMove(Location currentLocation, Command command, Direction direction)
+    public Location? CanChangeLocation(Location currentLocation, Command command, Direction direction)
     {
         switch (command)
         {
             case Command.Left:
             case Command.Right:
                 throw new ArgumentException(
-                    $"Can't use command {command} because it's not a movement command. ",
+                    $"Can't use command {command} because it's not changing location",
                     nameof(command));
             case Command.Forward:
-                var cell = Cells[currentLocation.X][currentLocation.Y];
-                var nextCell = cell.NextCells[(int)direction];
-                return nextCell?.Location;
+                return GetNextLocation(direction, currentLocation);
             default:
-                throw new NotImplementedException($"Features for command {command} was not implemented");
+                throw new NotImplementedException(
+                    $"Features for command {command} was not implemented");
         }
+    }
+    
+    private Location? GetNextLocation(Direction direction, Location location)
+    {
+        var x = (int)location.X;
+        var y = (int)location.Y;
+        
+        switch (direction)
+        {
+            case Direction.North:
+                y++;
+                break;
+            case Direction.South:
+                y--;
+                break;
+            case Direction.East:
+                x++;
+                break;
+            case Direction.West:
+                x--;
+                break;
+            default:
+                throw new NotImplementedException(
+                    $"Features for direction '{direction}' was not implemented");
+        }
+        
+        if (y >= Bounds.Y || x >= Bounds.X || x < 0 || y < 0) return null;
+
+        return new Location((uint)x, (uint)y);
     }
 }

@@ -46,7 +46,7 @@ public class Robot : IRobot
                 CurrentDirection = this.GetNewDirection(command);
                 return true;
             case Command.Forward:
-                var newLocation =_grid.CanMove(CurrentPosition, command, CurrentDirection);
+                var newLocation =_grid.CanChangeLocation(CurrentPosition, command, CurrentDirection);
                 if (newLocation == null)
                 {
                     IsLost = true;
