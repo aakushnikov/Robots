@@ -2,7 +2,7 @@
 
 public partial class Processor
 {
-    private enum States
+    public enum States
     {
         WaitingForGridData,
         WaitingForRobotData1,

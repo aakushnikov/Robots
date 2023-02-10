@@ -1,5 +1,4 @@
-﻿using Logging.Net;
-using Robots.Middleware.Interfaces;
+﻿using Robots.Middleware.Interfaces;
 using Robots.Model.Terrain;
 using Robots.Model.Robot;
 using Robots.Model.Interfaces;
@@ -24,8 +23,8 @@ public partial class Processor : IDisposable
     {
         if (!_okAccepted)
             throw new ApplicationException($"Grid and Robots locations and directions should be defined first. Use {nameof(ProcessInput)} method");
-        _ioProvider.WriteLine();
-        _ioProvider.WriteLine("Executing robots processing...");
+        _ioProvider.WriteLine(true);
+        _ioProvider.WriteLine(true,"Executing robots processing...");
         foreach (var robot in _robots)
         {
             robot.Process();
@@ -79,7 +78,8 @@ public partial class Processor : IDisposable
                         var robotData = string.Join(" ",
                             robot.CurrentPosition.X, robot.CurrentPosition.Y,
                             robot.CurrentDirection.ToString()[0], robot.IsLost ? "LOST" : string.Empty);
-                        _ioProvider.WriteLine($"Robot {robot.Id} last position: {robotData}");
+                        _ioProvider.WriteLine(true, $"Robot {robot.Id} last position:");
+                        _ioProvider.WriteLine(false, robotData);
                     }
                     break;
                 default:
@@ -88,11 +88,15 @@ public partial class Processor : IDisposable
         }
         catch (ApplicationException ex)
         {
-            Logger.Error(ex);
+            // TODO Logger.Error(JsonSerializer.Serialize(ex));
+            error = ex.Message;
+            return false;
         }
         catch (NotImplementedException ex)
         {
-            Logger.Error(ex);
+            // TODO Logger.Error(JsonSerializer.Serialize(ex));
+            error = ex.Message;
+            return false;
         }
         catch (Exception ex)
         {
@@ -167,18 +171,18 @@ public partial class Processor : IDisposable
         bool ok;
         do
         {
-            _ioProvider.WriteLine(message);
+            _ioProvider.WriteLine(true, message);
             _ioProvider.Write("> ");
             ok = ParseInstruction(_ioProvider.ReadLine(), out var error);
             if (ok) continue;
-            _ioProvider.WriteLine($"Incorrect format. {error}");
+            _ioProvider.WriteLine(true, $"Incorrect format. {error}");
         } while (!ok);
     }
 
     public void ProcessInput()
     {
         ProcessInput("Please, input grid size (X and Y) and press Enter. For example '5 3'.");
-        Console.WriteLine("Grid created. Thank you. ");
+        _ioProvider.WriteLine(true, "Grid created. Thank you. ");
 
         while (!_okAccepted)
         {
@@ -187,7 +191,7 @@ public partial class Processor : IDisposable
             if (_okAccepted) break;
             ProcessInput(
                 "Please, input robot's commands (sequence of chars: L/R/F) where L is Turn Left, R is Turn Right, F is Move Forward. For example. 'RFFLRF'");
-            Console.WriteLine($"Robot (ID: {_robots.Last().Id}) was created.");
+            _ioProvider.WriteLine(true, $"Robot (ID: {_robots.Last().Id}) was created.");
         } 
     }
 

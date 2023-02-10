@@ -16,4 +16,9 @@
         <PackageReference Include="coverlet.collector" Version="3.1.2" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\Robots.Middleware\Robots.Middleware.csproj" />
+      <ProjectReference Include="..\Robots.Model\Robots.Model.csproj" />
+    </ItemGroup>
+
 </Project>

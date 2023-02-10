@@ -1,14 +1,12 @@
 ﻿using System.Reflection;
 using Microsoft.Extensions.Configuration;
-using Logging.Net;
 
 namespace Robots.Middleware;
 
 public static class Tools
 {
     public static readonly IConfiguration Configuration;
-    private const string appConfigName = "appsettings.json";
-    
+    private const string AppConfigName = "appsettings.json";
     static Tools()
     {
         var assemblyLocation = Assembly.GetCallingAssembly().Location;
@@ -18,12 +16,7 @@ public static class Tools
                 
         var builder = new ConfigurationBuilder()
             .SetBasePath(path)
-            .AddJsonFile(appConfigName, optional: false);
+            .AddJsonFile(AppConfigName, optional: false);
         Configuration = builder.Build();
-        
-        Logger.LogToFile(Path.Join(
-            path,
-            Configuration.GetValue<string>("Logs"),
-            DateTime.UtcNow.ToString("yy-MM-dd"), ".log"));
     }
 }

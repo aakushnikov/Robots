@@ -4,13 +4,16 @@ namespace Robots.Middleware;
 
 public sealed class ConsoleIoProvider : IIOProvider
 {
+    public bool AllowInfoMessages => true;
+
     public string? ReadLine()
     {
         return Console.ReadLine();
     }
 
-    public void WriteLine(string? s = null)
+    public void WriteLine(bool isInfoMessage, string? s = null)
     {
+        if (isInfoMessage && !AllowInfoMessages) return;
         Console.WriteLine(s);
     }
 
